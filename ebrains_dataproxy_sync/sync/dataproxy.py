@@ -9,6 +9,7 @@ from io import StringIO
 from time import ctime
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+from typing import Union
 
 from ..hash import MD5_HASH_FILE
 from ..logger import logger
@@ -66,7 +67,6 @@ def sync_context(bucket: Bucket, remote_dir_dst: Path, force=False):
     try:
         yield log_msg
     finally:
-        print("leaving context")
 
         # Remove the .lock file on finish
         filehandle = bucket.get_file(str(lock_file))
@@ -81,14 +81,20 @@ def sync_context(bucket: Bucket, remote_dir_dst: Path, force=False):
         bucket.upload(log_io, str(log_file))
         log_io.close()
 
-def sync(bucket_name: str, path_to_sync: Path, prefix: str=".", * , force: bool=False):
+def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[Path, str]=".", * , force: bool=False):
+
+    path_to_sync = Path(path_to_sync)
+    remote_prefix = Path(remote_prefix)
 
     # import when it is needed, so that 
     from ..config import auth_token
     client = BucketApiClient(token=auth_token)
     bucket = client.buckets.get_bucket(bucket_name=bucket_name)
 
-    remote_prefix = Path(prefix)
+    if path_to_sync.is_file():
+        bucket.upload(str(path_to_sync), remote_prefix / path_to_sync)
+        return
+
 
     md5_file = path_to_sync / MD5_HASH_FILE
     remote_md5_path = remote_prefix / path_to_sync / MD5_HASH_FILE
@@ -128,13 +134,13 @@ def sync(bucket_name: str, path_to_sync: Path, prefix: str=".", * , force: bool=
                 print(f"retrying... {retry_counter}")
                 
 
-    with sync_context(bucket, Path(prefix, path_to_sync), force=force) as log:
+    with sync_context(bucket, Path(remote_prefix, path_to_sync), force=force) as log:
         with ThreadPoolExecutor() as exec:
             for progress in tqdm(
                 exec.map(
                     upload,
                     [Path(path_to_sync, file) for file in all_files],
-                    [Path(prefix, path_to_sync, file) for file in all_files],
+                    [Path(remote_prefix, path_to_sync, file) for file in all_files],
                 ),
                 total=len(all_files)
             ): ...
@@ -142,7 +148,7 @@ def sync(bucket_name: str, path_to_sync: Path, prefix: str=".", * , force: bool=
     all_dirs = [_dir for _dir in os.listdir(path_to_sync)
                 if (Path(path_to_sync) / _dir).is_dir()]
     for _dir in all_dirs:
-        sync(bucket_name, Path(path_to_sync, _dir), prefix, force=force)
+        sync(bucket_name, Path(path_to_sync, _dir), remote_prefix, force=force)
 
 __all__ = [
     "sync"
