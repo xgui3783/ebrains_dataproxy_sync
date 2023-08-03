@@ -17,7 +17,6 @@ setup(
         # https://github.com/HumanBrainProject/ebrains-drive/pull/20
         # to merge and release
         # once merged, use ebrains-drive as dependency
-        "version_query",
         "ebrains_drive @ git+https://github.com/xgui3783/ebrains-drive.git@tmp_fixDeleteUseIO",
     ]
 )
