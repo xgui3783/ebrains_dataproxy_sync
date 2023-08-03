@@ -10,7 +10,6 @@ from time import ctime
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
-from ..config import auth_token
 from ..hash import MD5_HASH_FILE
 from ..logger import logger
 from ..exceptions import SyncLocked
@@ -83,6 +82,9 @@ def sync_context(bucket: Bucket, remote_dir_dst: Path, force=False):
         log_io.close()
 
 def sync(bucket_name: str, path_to_sync: Path, prefix: str=".", * , force: bool=False):
+
+    # import when it is needed, so that 
+    from ..config import auth_token
     client = BucketApiClient(token=auth_token)
     bucket = client.buckets.get_bucket(bucket_name=bucket_name)
 
