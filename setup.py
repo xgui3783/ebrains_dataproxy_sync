@@ -10,6 +10,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "requests",
+        "tqdm",
 
         # waiting for
         # https://github.com/HumanBrainProject/ebrains-drive/pull/22
