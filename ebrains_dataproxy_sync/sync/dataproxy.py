@@ -92,7 +92,7 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
     bucket = client.buckets.get_bucket(bucket_name=bucket_name)
 
     if path_to_sync.is_file():
-        bucket.upload(str(path_to_sync), remote_prefix / path_to_sync)
+        bucket.upload(str(path_to_sync), str(remote_prefix / path_to_sync))
         return
 
 
@@ -120,8 +120,7 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
     
     all_files = [file
                  for file in os.listdir(path_to_sync)
-                 if (Path(path_to_sync) / file).is_file()
-                 and file != MD5_HASH_FILE]
+                 if (Path(path_to_sync) / file).is_file()]
     
     def upload(path_to_file: Path, remote_path: Path):
         retry_counter = 0
