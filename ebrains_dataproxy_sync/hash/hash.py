@@ -2,6 +2,7 @@ from pathlib import Path
 from hashlib import md5
 import os
 from typing import Callable
+import time
 
 skip_files = []
 
@@ -38,7 +39,7 @@ def hash_fn(path: Path, filter_fn:Callable[[Path], bool]=None):
     raise Exception(f"{path} is neither file nor directory")
 
 def ignore_hash(path: Path):
-    return path.name != MD5_HASH_FILE
+    return MD5_HASH_FILE in str(path)
 
 def hash_dir(directory: Path):
     """Given a directory, recursively hash all subdirectories and write the result of the hash to 
@@ -50,5 +51,10 @@ def hash_dir(directory: Path):
         for dirname in dirnames:
             _dir = Path(dirpath) / dirname
             hash_val = hash_fn(_dir, filter_fn=ignore_hash)
+            if (_dir / MD5_HASH_FILE).exists():
+                os.rename(
+                    _dir / MD5_HASH_FILE,
+                    f"{str(_dir / MD5_HASH_FILE)}.bk.{round(time.time())}"
+                )
             with open(_dir / MD5_HASH_FILE, "w") as fp:
                 fp.write(hash_val)

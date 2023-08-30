@@ -115,8 +115,9 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
                 if local_md5_hash == remote_md5_hash:
                     logger.info(f"hash match! {local_md5_hash!r} == {remote_md5_hash!r}, skipping {str(path_to_sync)!r}!")
                     return
+                logger.info(f"hash does not match. {local_md5_hash!r} != {remote_md5_hash!r}, syncing {str(path_to_sync)!r}!")
             except DoesNotExist:
-                logger.debug(f"remote {bucket_name}:{remote_md5_path} does not exist, will upload directory.")
+                logger.info(f"remote {bucket_name}:{remote_md5_path} does not exist, will upload directory.")
     
     all_files = [file
                  for file in os.listdir(path_to_sync)
