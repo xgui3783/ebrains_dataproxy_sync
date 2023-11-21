@@ -81,10 +81,20 @@ def sync_context(bucket: Bucket, remote_dir_dst: Path, force=False):
         bucket.upload(log_io, str(log_file))
         log_io.close()
 
-def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[Path, str]=".", * , force: bool=False):
+def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[Path, str]=".", * , local_relative_to: Union[Path, str]=None, force: bool=False):
+    """Sync file or folder to remote bucket.
+
+    Args:
+        bucket_name (str): name of the bucket to sync to
+        path_to_sync (str or Path): (local) path to the file/directory to upload
+        remote_prefix (str or Path): (remote) path to prepend
+        local_relative_to (str or Path): (local) path to trim
+        force (bool): overwrite if necessary
+    """
 
     path_to_sync = Path(path_to_sync)
     remote_prefix = Path(remote_prefix)
+    local_relative_to = local_relative_to or "."
 
     # import when it is needed, so that 
     from ..config import auth_token
@@ -92,12 +102,20 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
     bucket = client.buckets.get_bucket(bucket_name=bucket_name)
 
     if path_to_sync.is_file():
-        bucket.upload(str(path_to_sync), str(remote_prefix / path_to_sync))
+        logger.info("Syncing single file...")
+        bucket.upload(str(path_to_sync), str(remote_prefix / path_to_sync.relative_to(local_relative_to)))
+        logger.info("Completed!")
         return
 
 
+    # Depth first
+    all_dirs = [_dir for _dir in os.listdir(path_to_sync)
+                if (Path(path_to_sync) / _dir).is_dir()]
+    for _dir in all_dirs:
+        sync(bucket_name, Path(path_to_sync, _dir), remote_prefix, local_relative_to=local_relative_to, force=force)
+
     md5_file = path_to_sync / MD5_HASH_FILE
-    remote_md5_path = remote_prefix / path_to_sync / MD5_HASH_FILE
+    remote_md5_path = remote_prefix / path_to_sync.relative_to(local_relative_to) / MD5_HASH_FILE
 
     # force flag will sync everything, regardless of hash
     if not force:
@@ -140,15 +158,11 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
                 exec.map(
                     upload,
                     [Path(path_to_sync, file) for file in all_files],
-                    [Path(remote_prefix, path_to_sync, file) for file in all_files],
+                    [Path(remote_prefix, path_to_sync.relative_to(local_relative_to), file) for file in all_files],
                 ),
                 total=len(all_files)
             ): ...
     
-    all_dirs = [_dir for _dir in os.listdir(path_to_sync)
-                if (Path(path_to_sync) / _dir).is_dir()]
-    for _dir in all_dirs:
-        sync(bucket_name, Path(path_to_sync, _dir), remote_prefix, force=force)
 
 __all__ = [
     "sync"
