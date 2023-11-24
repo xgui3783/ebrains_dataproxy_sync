@@ -54,7 +54,7 @@ def hash_dir(directory: Path):
     
     sub_directories = [fname for fname in os.listdir(directory) if Path(directory, fname).is_dir()]
     for sub_dir in sub_directories:
-        hash_dir(sub_dir)
+        hash_dir(directory / sub_dir)
 
     for dirpath, dirnames, filenames in os.walk(directory):
         for dirname in dirnames:
