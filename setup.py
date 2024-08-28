@@ -14,6 +14,7 @@ setup(
 
         # waiting for
         # https://github.com/HumanBrainProject/ebrains-drive/pull/27
+        # https://github.com/HumanBrainProject/ebrains-drive/pull/31
         # to merge and release
         # once merged, use ebrains-drive as dependency
         "ebrains_drive @ git+https://github.com/xgui3783/ebrains-drive.git@tmp_customhdr",
