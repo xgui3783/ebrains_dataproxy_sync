@@ -81,6 +81,44 @@ def sync_context(bucket: Bucket, remote_dir_dst: Path, force=False):
         bucket.upload(log_io, str(log_file))
         log_io.close()
 
+def sync_down(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[Path, str]="."):
+    """Sync file or folder from remote bucket
+    
+    Args:
+        bucket_name (str): name of the bucket to sync to
+        path_to_sync (str or Path): (local) path where files will be downloaded
+        remote_prefix (str or Path): (remote) prefix
+        force (bool): overwrite if necessary
+    """
+    
+    path_to_sync = Path(path_to_sync)
+    remote_prefix = Path(remote_prefix)
+    
+    # import when it is needed, so that 
+    from ..config import auth_token
+    client = BucketApiClient(token=auth_token) if auth_token else BucketApiClient()
+    bucket = client.buckets.get_bucket(bucket_name=bucket_name)
+    all_files = [f for f in bucket.ls(prefix=str(remote_prefix))]
+
+    def download(f):
+        fname = Path(f.name)
+
+        dst_fname = path_to_sync / fname
+        dst_fname.parent.mkdir(exist_ok=True, parents=True)
+        b = f.get_content()
+        with open(path_to_sync / fname, "wb") as fp:
+            fp.write(b)
+        
+
+    with ThreadPoolExecutor() as exec:
+        for p in tqdm(
+            exec.map(
+                download,
+                all_files
+            ),
+            total=len(all_files)
+        ): ...
+
 def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[Path, str]=".", * , local_relative_to: Union[Path, str]=None, force: bool=False):
     """Sync file or folder to remote bucket.
 
@@ -165,5 +203,6 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
     
 
 __all__ = [
-    "sync"
+    "sync",
+    "sync_down"
 ]
