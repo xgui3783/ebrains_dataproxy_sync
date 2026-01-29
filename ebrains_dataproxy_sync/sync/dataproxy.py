@@ -131,8 +131,10 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
     """
 
     path_to_sync = Path(path_to_sync)
+
+    # Be more transparent. Old behavior crashes if path_to_sync is absolute
+    relative_path = path_to_sync.relative_to(local_relative_to) if local_relative_to else path_to_sync
     remote_prefix = Path(remote_prefix)
-    local_relative_to = local_relative_to or "."
 
     # import when it is needed, so that 
     from ..config import auth_token
@@ -141,7 +143,7 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
 
     if path_to_sync.is_file():
         logger.info("Syncing single file...")
-        bucket.upload(str(path_to_sync), str(remote_prefix / path_to_sync.relative_to(local_relative_to)))
+        bucket.upload(str(path_to_sync), str(remote_prefix / relative_path))
         logger.info("Completed!")
         return
 
@@ -153,7 +155,7 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
         sync(bucket_name, Path(path_to_sync, _dir), remote_prefix, local_relative_to=local_relative_to, force=force)
 
     md5_file = path_to_sync / MD5_HASH_FILE
-    remote_md5_path = remote_prefix / path_to_sync.relative_to(local_relative_to) / MD5_HASH_FILE
+    remote_md5_path = remote_prefix / relative_path / MD5_HASH_FILE
 
     # force flag will sync everything, regardless of hash
     if not force:
@@ -196,7 +198,7 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
                 exec.map(
                     upload,
                     [Path(path_to_sync, file) for file in all_files],
-                    [Path(remote_prefix, path_to_sync.relative_to(local_relative_to), file) for file in all_files],
+                    [Path(remote_prefix, relative_path, file) for file in all_files],
                 ),
                 total=len(all_files)
             ): ...
