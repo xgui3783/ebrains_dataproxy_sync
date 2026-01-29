@@ -119,7 +119,7 @@ def sync_down(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: U
             total=len(all_files)
         ): ...
 
-def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[Path, str]=".", * , local_relative_to: Union[Path, str]=None, force: bool=False):
+def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[Path, str]=".", * , local_relative_to: Union[Path, str]=None, force: bool=False, max_workers:int=None):
     """Sync file or folder to remote bucket.
 
     Args:
@@ -193,7 +193,7 @@ def sync(bucket_name: str, path_to_sync: Union[Path, str], remote_prefix: Union[
                 
 
     with sync_context(bucket, Path(remote_prefix, path_to_sync), force=force) as log:
-        with ThreadPoolExecutor() as exec:
+        with ThreadPoolExecutor(max_workers=max_workers) as exec:
             for progress in tqdm(
                 exec.map(
                     upload,
