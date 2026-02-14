@@ -92,6 +92,11 @@ def sync_context(bucket: Bucket, remote_dir_dst: Path, force=False):
         log_io.close()
 
 
+@contextmanager
+def noop_ctx():
+    yield
+
+
 def sync_down(
     bucket_name: str,
     path_to_sync: Union[Path, str],
@@ -138,6 +143,7 @@ def sync(
     local_relative_to: Union[Path, str] = None,
     force: bool = False,
     max_workers: int = None,
+    reckless_mode: bool = False,
 ):
     """Sync file or folder to remote bucket.
 
@@ -147,6 +153,7 @@ def sync(
         remote_prefix (str or Path): (remote) path to prepend
         local_relative_to (str or Path): (local) path to trim
         force (bool): overwrite if necessary
+        reckless_mode (bool): do not use sync_context
     """
 
     path_to_sync = Path(path_to_sync)
@@ -227,7 +234,11 @@ def sync(
     def upload(path_to_file: Path, remote_path: Path):
         bucket.upload(path_to_file, str(remote_path), timeout=5)
 
-    with sync_context(bucket, Path(remote_prefix, path_to_sync), force=force) as log:
+    with (
+        noop_ctx()
+        if reckless_mode
+        else sync_context(bucket, Path(remote_prefix, path_to_sync), force=force)
+    ) as log:
         progress = tqdm(total=len(all_files))
         with ThreadPoolExecutor(max_workers=max_workers) as exec:
             all_uploads = [
