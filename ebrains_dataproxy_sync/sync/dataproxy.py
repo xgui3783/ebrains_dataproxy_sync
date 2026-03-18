@@ -192,6 +192,7 @@ def sync(
             local_relative_to=local_relative_to,
             force=force,
             max_workers=max_workers,
+            reckless_mode=reckless_mode,
         )
 
     md5_file = path_to_sync / MD5_HASH_FILE
@@ -234,10 +235,12 @@ def sync(
     def upload(path_to_file: Path, remote_path: Path):
         bucket.upload(path_to_file, str(remote_path), timeout=5)
 
+
+    local_relative_to
     with (
         noop_ctx()
         if reckless_mode
-        else sync_context(bucket, Path(remote_prefix, path_to_sync), force=force)
+        else sync_context(bucket, Path(remote_prefix, relative_path), force=force)
     ) as log:
         progress = tqdm(total=len(all_files))
         with ThreadPoolExecutor(max_workers=max_workers) as exec:
