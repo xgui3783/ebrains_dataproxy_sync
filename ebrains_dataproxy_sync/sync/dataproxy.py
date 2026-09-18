@@ -233,10 +233,9 @@ def sync(
     ]
 
     def upload(path_to_file: Path, remote_path: Path):
-        bucket.upload(path_to_file, str(remote_path), timeout=5)
+        bucket.upload(str(path_to_file), str(remote_path), timeout=5)
 
 
-    local_relative_to
     with (
         noop_ctx()
         if reckless_mode
@@ -255,9 +254,12 @@ def sync(
                 done, pending = wait(remaining_jobs, return_when=FIRST_COMPLETED)
                 for job in done:
                     # if exception, resubmit job
-                    if job.exception():
+                    exc = job.exception()
+                    if exc:
                         args = remaining_jobs[job]
-                        logger.warn(f"Uploading {args[0]} failed... retrying...")
+                        logger.warning(
+                            f"Uploading {args[0]} failed ({exc!r})... retrying..."
+                        )
                         renewed_jobs[exec.submit(upload, *args)] = args
                     else:
                         progress.update()
