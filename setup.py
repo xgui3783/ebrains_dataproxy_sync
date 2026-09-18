@@ -11,6 +11,13 @@ setup(
     install_requires=[
         "requests",
         "tqdm",
-        "ebrains-drive",
+
+        # waiting for
+        # https://github.com/HumanBrainProject/ebrains-drive/pull/27
+        # https://github.com/HumanBrainProject/ebrains-drive/pull/31
+        # to merge and release
+        # once merged, use ebrains-drive as dependency
+        # PR is merged on master, but not yet released. use from pypi once released
+        "ebrains_drive @ git+https://github.com/HumanBrainProject/ebrains-storage.git@fa59fe12d22eb252b0c15a7c4772ab4b27a62452",
     ]
 )
